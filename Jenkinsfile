@@ -17,24 +17,40 @@ pipeline {
             }
         }
 
+        stage('Test SSH Connectivity') {
+            steps {
+                sshagent(credentials: ['app-servers-ssh']) {
+                    sh '''
+                        ansible app_servers \
+                        -i ansible/inventory.ini \
+                        -m ping
+                    '''
+                }
+            }
+        }
+
         stage('Deploy Application') {
             steps {
-                sh '''
-                    ansible-playbook \
-                    -i ansible/inventory.ini \
-                    ansible/deploy.yml
-                '''
+                sshagent(credentials: ['app-servers-ssh']) {
+                    sh '''
+                        ansible-playbook \
+                        -i ansible/inventory.ini \
+                        ansible/deploy.yml
+                    '''
+                }
             }
         }
 
         stage('Verify Deployment') {
             steps {
-                sh '''
-                    ansible app_servers \
-                    -i ansible/inventory.ini \
-                    -m shell \
-                    -a "curl -fsS -o /dev/null -w '%{http_code}' http://localhost:8080"
-                '''
+                sshagent(credentials: ['app-servers-ssh']) {
+                    sh '''
+                        ansible app_servers \
+                        -i ansible/inventory.ini \
+                        -m shell \
+                        -a "curl -fsS -o /dev/null -w '%{http_code}' http://localhost:8080"
+                    '''
+                }
             }
         }
     }
@@ -49,3 +65,4 @@ pipeline {
         }
     }
 }
+
