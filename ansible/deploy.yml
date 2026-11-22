@@ -1,0 +1,25 @@
+---
+- name: Deploy application on Docker servers
+  hosts: app_servers
+  become: true
+
+  tasks:
+    - name: Ensure Docker is running
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Pull Nginx image
+      community.docker.docker_image:
+        name: nginx:alpine
+        source: pull
+
+    - name: Deploy application container
+      community.docker.docker_container:
+        name: project2-app
+        image: nginx:alpine
+        state: started
+        restart_policy: always
+        published_ports:
+          - "8080:80"
